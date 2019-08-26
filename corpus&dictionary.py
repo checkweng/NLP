@@ -87,3 +87,55 @@ corpus  # 词带中对应词出现的次数，如(2, 1)代表词带中的2号词
 
 corpora.MmCorpus.serialize('../../tmp/deerwester.mm', corpus)  # 保存至本地
 # 除了MmCorpus以外，还有SvmLightCorpus等以各种格式存入磁盘
+
+
+###################################################################################################################计算文本相似度
+from gensim import corpora, models, similarities
+from pprint import pprint
+
+
+# 读取词典和文档，计算tf idf 和 lsi 的表达方式，并生成相似度矩阵
+dictionary = corpora.Dictionary.load('../../tmp/deerwester.dict')
+corpus = corpora.MmCorpus('../../tmp/deerwester.mm') # 上一示例中生成的数据
+tfidf_model = models.TfidfModel(corpus)
+corpus_tfidf = tfidf_model[corpus]  # TIDIF 逆文档频率
+lsi_model = models.LsiModel(corpus_tfidf,id2word=dictionary,num_topics=2)
+corpus_lsi = lsi_model[corpus_tfidf] # LSI 潜在语义索引
+corpus_simi_matrix = similarities.MatrixSimilarity(corpus_lsi)
+corpus_simi_matrix.save('../../tmp/deerwester.index')
+similarities.MatrixSimilarity.load('../../tmp/deerwester.index') # 下次调用
+
+# 基于tfidf的文本相似度分析 
+index = similarities.MatrixSimilarity(corpus_tfidf) 
+vec_bow =[dictionary.doc2bow(text) for text in raw_data]   #把用户raw_data语料转为词包
+all_reult_sims = []
+times_v2 = 0 
+
+###对每个用户预料与标准预料计算相似度
+
+for i in vec_bow:    
+     #直接使用上面得出的tf-idf 模型即可得出商品描述的tf-idf 值
+    sims = index[tfidf_model[i]]
+    sims = sorted(enumerate(sims), key=lambda item: -item[1])
+    result_sims = []    
+    for i,j in sims:
+        result_sims.append([map_value_user[times_v2],map_value[i],j])
+    times_v2 += 1
+    all_reult_sims.append(result_sims[:20])
+print(all_reult_sims)  # 查看前20条显示相似文本
+
+# 基于lsi的文本相似度分析 
+index = similarities.MatrixSimilarity(corpus_lsi) 
+vec_bow =[dictionary.doc2bow(text) for text in raw_data]  #把用户语料raw_data转为词包
+all_reult_sims = []
+times_v2 = 0 
+for i in vec_bow:    
+     #直接使用上面得出的tf-idf 模型即可得出商品描述的tf-idf 值
+    sims = index[lsi[tfidf_model[i]]]
+    sims = sorted(enumerate(sims), key=lambda item: -item[1])
+    result_sims = []    
+    for i,j in sims:
+        result_sims.append([map_value_user[times_v2],map_value[i],j])
+    times_v2 += 1
+    all_reult_sims.append(result_sims[:20])
+print(all_reult_sims)  # 查看前20条显示相似文本
