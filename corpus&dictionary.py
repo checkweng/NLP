@@ -3,6 +3,7 @@
 Created on Mon Aug 26 14:25:59 2019
 
 @author: Administrator
+corpus 就是词袋
 """
 
 
